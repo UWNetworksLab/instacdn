@@ -34,7 +34,17 @@ freedom.on('fetch', function(urls) {
 // Remote asks for URL.
 identity.on('message', function(req) {
   // Req from remote.
-  console.log('asked for ' + req);
+  var msg = JSON.parse(req.msg);
+  if (msg.type == 'request') {
+    if (typeof cache[msg.url] !== "undefined") {
+      identity.send(req.from, JSON.stringify({'type':'response', 'data':'blob here'}));
+    } else {
+      console.log("Missing resource " + msg.url);
+    }
+  } else if (msg.type =='response') {
+    cache[msg.url] = new Blob([msg.data], {type: 'image/jpeg'});
+    freedom.emit('resource', {url: msg.url, src: URL.createObjectURL(cache[msg.url])});
+  }
 });
 
 identity.on('buddylist', function(b) {
@@ -43,6 +53,7 @@ identity.on('buddylist', function(b) {
 
 /// InstaCDN methods.
 function http_fetch() {
+  console.log('fetch from server');
   for (var i = 0; i < outstanding.length; i++) {
     var req = new XMLHttpRequest();
     var url = outstanding[i];
@@ -63,6 +74,10 @@ function http_fetch() {
 
 function instaCDN_fetch() {
   console.log('fetch from peers');
+  for (var i = 0; i < outstanding.length; i++) {
+    // TODO: setup transport with peer instead of requesting directly.
+    identity.send(peers[0], JSON.stringify({'type':'request', 'url':outstanding[i]}));
+  }
 }
 
 freedom.emit('load');
