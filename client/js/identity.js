@@ -16,13 +16,14 @@ function IdentityProvider() {
 IdentityProvider.prototype.onMsg = function(m) {
   var data = JSON.parse(m.data);
   if (data.from == 0) {
+    // roster update
+    identity.emit('buddylist', data.msg);
+
     if (typeof this.id === "function") {
       var c = this.id;
       this.id = data.id;
       c();
     }
-    // roster update
-    identity.emit('buddylist', data.msg);
   } else {
     identity.emit('message', data);
   }
