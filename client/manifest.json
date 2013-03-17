@@ -2,7 +2,7 @@
   "name": "InstaCDN",
   "description": "Rendezvous Sample FreeDOM application",
   "app": {
-    "script": "js/instacdn.js"
+    "script": "js/instapeer.js"
   },
   "dependencies": {
     "identity": "js/identity.json"
