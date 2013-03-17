@@ -1,0 +1,13 @@
+{
+  "name": "InstaCDN",
+  "description": "Rendezvous Sample FreeDOM application",
+  "app": {
+    "script": "js/instacdn.js"
+  },
+  "dependencies": {
+    "identity": "js/identity.json"
+  },
+  "permissions": [
+    "identity"
+  ]
+}
