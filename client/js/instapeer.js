@@ -75,10 +75,10 @@ transport.on('onMessage', function(data) {
     reqReader.onload = function(f) {
       var req = JSON.parse(f.target.result);
       if (req.type == 'request') {
-        console.log("Request");
+        console.log("Received request: "+f.target.result);
         if (typeof cache[req.url] !== "undefined") {
-          console.log("Sending");
-          var resp = JSON.stringify({'type':'response', 'url':req.url, 'data':cache[req.url]});
+          console.log("Sending blob of size: "+cache[req.url].size);
+          var resp = JSON.stringify({'type':'response', 'url':req.url});
           var resplen = new Uint32Array(1);
           resplen[0] = resp.length;
           var responseMsg = {};
@@ -89,9 +89,11 @@ transport.on('onMessage', function(data) {
           console.log("Missing resource " + req.url);
         }
       } else if (req.type =='response') {
-        console.log("Got REsponse!!");
+        console.log("Received response: "+f.target.result);
         //cache[req.url] = new Blob([req.data], {type: 'image/jpeg'});
-        cache[req.url] = msg.slice(4+len);
+        var image = msg.slice(4+len,4+len+152);
+        console.log("Image blob size: "+image.size);
+        cache[req.url] = image;
         freedom.emit('resource', {url: req.url, src: URL.createObjectURL(cache[req.url])});
       }
     };
