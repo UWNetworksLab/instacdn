@@ -63,23 +63,38 @@ transport.on('onSignal', function(data) {
   identity.send(peer, data.message);
 });
 
-transport.on('onMessage', function(req) {
-  var msg = req.message;
-  console.log(JSON.stringify(req.message));
+transport.on('onMessage', function(data) {
+  var msg = data.message;
+  var lenBlob = msg.splice(0,4);
+  var lenReader = new FileReader();
+  lenReader.onload = function(e) {
+    var lenArray = new UInt32Array(e.target.result);
+    var len = lenArray[0];
+    var reqBlob = msg.splice(4,4+len);
+    var reqReader = new FileReader();
+    reqReader.onload = function(f) {
+      var req = JSON.parse(f.target.result);
+      if (req.type == 'request') {
+        console.log("Request");
+        if (typeof cache[req.url] !== "undefined") {
+          console.log("Sending");
+          var resp = JSON.stringify({'type':'response', 'url':req.url, 'data':cache[req.url]});
+          var resplen = new UInt32Array(1);
+          resplen[0] = resp.length;
+          transport.send(req.id, new Blob([resplen, resp, cache[req.url]]));
+        } else {
+          console.log("Missing resource " + req.url);
+        }
+      } else if (req.type =='response') {
+        //cache[req.url] = new Blob([req.data], {type: 'image/jpeg'});
+        cache[req.url] = msg.splice(4+len);
+        freedom.emit('resource', {url: req.url, src: URL.createObjectURL(cache[req.url])});
+      }
+    };
+    reqReader.readAsText(reqBlob);
+  };
+  lenReader.readAsArrayBuffer(lenBlob);
   
-  if (msg.type == 'request') {
-    console.log("Request");
-    if (typeof cache[msg.url] !== "undefined") {
-      console.log("Sending");
-      transport.send(req.id, {'type':'response', 'url':msg.url, 'data':cache[msg.url]});
-    } else {
-      console.log("Missing resource " + msg.url);
-    }
-  } else if (msg.type =='response') {
-    cache[msg.url] = new Blob([msg.data], {type: 'image/jpeg'});
-    freedom.emit('resource', {url: msg.url, src: URL.createObjectURL(cache[msg.url])});
-  }
-
 });
 
 /// InstaCDN methods.
@@ -124,7 +139,10 @@ function instaCDN_fetch() {
   console.log('fetch from peers');
 
   for (var i = 0; i < outstanding.length; i++) {
-    messageQueue.push({'type':'request', 'url':outstanding[i]});
+    var req = JSON.stringify({'type':'request', 'url':outstanding[i]});
+    var len = new UInt32Array(1);
+    len[0] = req.length
+    messageQueue.push(new Blob([len,req]));
   }
 
   if (!getReadySock()) {
