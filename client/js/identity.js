@@ -28,6 +28,7 @@ IdentityProvider.prototype.onMsg = function(m) {
     }
   } else {
     identity.emit('message', data);
+    //console.log("Received msg: "+data.msg);
   }
 }
 
@@ -42,7 +43,7 @@ IdentityProvider.prototype.get = function(continuation) {
 
 IdentityProvider.prototype.send = function(to, msg, continuation) {
   this.conn.send(JSON.stringify({to:to, msg:msg}));
-  continuation();
+  //continuation();
 };
 
 var identity = freedom.identity();

@@ -5,11 +5,13 @@ var cache = {};
 var outstanding;
 var peers = [];
 var sockId = {};
+var sockState = {};
+var messageQueue = [];
 
 // Client asks for URL.
 freedom.on('fetch', function(urls) {
   outstanding = urls;
-  
+  //Used waits until we get a buddylist from the server
   var promise = identity.get();
   promise.done(function (id) {
     if (peers.indexOf(id.id) > -1) {
@@ -26,14 +28,13 @@ freedom.on('fetch', function(urls) {
 // Remote asks for URL.
 identity.on('message', function(req) {
   // Req from remote.
-  var msg = JSON.parse(req.msg);
   if (sockId[req.from]) {
-    transport.accept(sockId[req.from], msg);    
+    var promise = transport.accept(sockId[req.from], req.msg);
   } else {
-    var promise = transport.accept(null, msg);
+    var promise = transport.accept(null, req.msg);
     promise.done(function (acceptresp) {
       sockId[req.from] = acceptresp.id;
-      identity.send(req.from, JSON.stringify(acceptresp.offer));
+      identity.send(req.from, acceptresp.offer);
     });
   }
 });
@@ -44,19 +45,33 @@ identity.on('buddylist', function(b) {
 
 transport.on('onStateChange', function(data) {
   console.log(data.id+" state change to: "+data.state);
+  sockState[data.id] = data.state;
+  if (data.state == "open") {
+    flushQueue();
+  }
 });
 
 transport.on('onSignal', function(data) {
-  var peer = sockId.indexOf(data.id);
-
+  function findPeer(id) {
+    for (var prop in sockId) {
+      if (sockId[prop] == id) {
+        return prop;
+      }
+    }
+  }
+  var peer = findPeer(data.id);
+  identity.send(peer, data.message);
 });
 
 transport.on('onMessage', function(req) {
-  var msg = JSON.parse(req.msg);
+  var msg = req.message;
+  console.log(JSON.stringify(req.message));
   
   if (msg.type == 'request') {
+    console.log("Request");
     if (typeof cache[msg.url] !== "undefined") {
-      transport.send(req.id, JSON.stringify({'type':'response', 'url':msg.url, 'data':'blob here'}));
+      console.log("Sending");
+      transport.send(req.id, {'type':'response', 'url':msg.url, 'data':cache[msg.url]});
     } else {
       console.log("Missing resource " + msg.url);
     }
@@ -88,26 +103,41 @@ function http_fetch() {
   }
 };
 
-function instaCDN_fetch() {
-  console.log('fetch from peers');
-  function getFirst(array) {
-    for (var prop in array) {
-      return array[prop];
+function getReadySock() {
+  for (var key in sockState) {
+    if (sockState[key] == "open") {
+      return parseInt(key);
     }
   }
-  var promise = transport.create();
-  promise.done(function (sockInfo) {
-    console.log(sockInfo);
-    sockId[peers[0]] = sockInfo.id;
-    console.log("Created PeerConnection: "+sockInfo.id);
-    identity.send(peers[0], JSON.stringify(sockInfo.offer));
-  });
+  return null;
+}
+
+function flushQueue() {
+  var sock = getReadySock();
+  for (var i in messageQueue) {
+    transport.send(sock, messageQueue[i]);
+  }
+  messageQueue = [];
+}
+
+function instaCDN_fetch() {
+  console.log('fetch from peers');
 
   for (var i = 0; i < outstanding.length; i++) {
-    // TODO: setup transport with peer instead of requesting directly.
-    //var sock = getFirst(sockId);
-    //transport.send(sock, JSON.stringify({'type':'request', 'url':outstanding[i]}));
-    
+    messageQueue.push({'type':'request', 'url':outstanding[i]});
+  }
+
+  if (!getReadySock()) {
+    var promise = transport.create();
+    promise.done(function (sockInfo) {
+      console.log(sockInfo);
+      sock = sockInfo.id;
+      sockId[peers[0]] = sock;
+      console.log("Created PeerConnection: "+sock);
+      identity.send(peers[0], sockInfo.offer);
+    });
+  } else {
+    flushQueue();
   }
 }
 
