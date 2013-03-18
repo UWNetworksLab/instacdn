@@ -91,7 +91,7 @@ transport.on('onMessage', function(data) {
       } else if (req.type =='response') {
         console.log("Received response: "+f.target.result);
         //cache[req.url] = new Blob([req.data], {type: 'image/jpeg'});
-        var image = msg.slice(4+len,4+len+152);
+        var image = msg.slice(4+len);
         console.log("Image blob size: "+image.size);
         cache[req.url] = image;
         freedom.emit('resource', {url: req.url, src: URL.createObjectURL(cache[req.url])});
