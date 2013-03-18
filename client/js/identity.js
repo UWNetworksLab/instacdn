@@ -23,6 +23,8 @@ IdentityProvider.prototype.onMsg = function(m) {
       var c = this.id;
       this.id = data.id;
       c();
+    } else {
+      this.id = data.id;
     }
   } else {
     identity.emit('message', data);

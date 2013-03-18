@@ -8,6 +8,7 @@
     "identity": "js/identity.json"
   },
   "permissions": [
-    "identity"
+    "identity",
+    "core.transport"
   ]
 }
