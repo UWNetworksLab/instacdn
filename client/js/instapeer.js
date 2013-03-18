@@ -65,12 +65,12 @@ transport.on('onSignal', function(data) {
 
 transport.on('onMessage', function(data) {
   var msg = data.data;
-  var lenBlob = msg.splice(0,4);
+  var lenBlob = msg.slice(0,4);
   var lenReader = new FileReader();
   lenReader.onload = function(e) {
     var lenArray = new Uint32Array(e.target.result);
     var len = lenArray[0];
-    var reqBlob = msg.splice(4,4+len);
+    var reqBlob = msg.slice(4,4+len);
     var reqReader = new FileReader();
     reqReader.onload = function(f) {
       var req = JSON.parse(f.target.result);
@@ -87,7 +87,7 @@ transport.on('onMessage', function(data) {
         }
       } else if (req.type =='response') {
         //cache[req.url] = new Blob([req.data], {type: 'image/jpeg'});
-        cache[req.url] = msg.splice(4+len);
+        cache[req.url] = msg.slice(4+len);
         freedom.emit('resource', {url: req.url, src: URL.createObjectURL(cache[req.url])});
       }
     };

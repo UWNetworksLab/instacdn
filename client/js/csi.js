@@ -2,6 +2,7 @@ var start = window.performance.now();
 var end = -1;
 var timer = function(e) {
   if(e.target.tagName == "IMG") {
+    console.log("BOOM!");
     end = window.performance.now();
   }
 }
