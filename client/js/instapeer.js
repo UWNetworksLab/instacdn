@@ -79,13 +79,17 @@ transport.on('onMessage', function(data) {
         if (typeof cache[req.url] !== "undefined") {
           console.log("Sending");
           var resp = JSON.stringify({'type':'response', 'url':req.url, 'data':cache[req.url]});
-          var resplen = new UInt32Array(1);
+          var resplen = new Uint32Array(1);
           resplen[0] = resp.length;
-          transport.send({header: req.id, data: new Blob([resplen, resp, cache[req.url]])});
+          var responseMsg = {};
+          responseMsg['header'] = data['header'];
+          responseMsg['data'] = new Blob([resplen, resp, cache[req.url]]);
+          transport.send(responseMsg);
         } else {
           console.log("Missing resource " + req.url);
         }
       } else if (req.type =='response') {
+        console.log("Got REsponse!!");
         //cache[req.url] = new Blob([req.data], {type: 'image/jpeg'});
         cache[req.url] = msg.slice(4+len);
         freedom.emit('resource', {url: req.url, src: URL.createObjectURL(cache[req.url])});
