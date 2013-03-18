@@ -21,6 +21,7 @@ var freedom = {
     freedom['on' + a] = f;
   },
   emit: function(a, b) {
+    console.log('on ' + a);
     freedom['on' + a](b);
   }
 };
