@@ -1,7 +1,9 @@
 var start = window.performance.now();
 var end = -1;
-var timer = function() {
-  end = window.performance.now();
+var timer = function(e) {
+  if(e.target.tagName == "IMG") {
+    end = window.performance.now();
+  }
 }
 window.addEventListener('DOMSubtreeModified', timer);
 var timeID = window.setInterval(function() {
