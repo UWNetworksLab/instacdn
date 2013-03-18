@@ -64,11 +64,11 @@ transport.on('onSignal', function(data) {
 });
 
 transport.on('onMessage', function(data) {
-  var msg = data.message;
+  var msg = data.data;
   var lenBlob = msg.splice(0,4);
   var lenReader = new FileReader();
   lenReader.onload = function(e) {
-    var lenArray = new UInt32Array(e.target.result);
+    var lenArray = new Uint32Array(e.target.result);
     var len = lenArray[0];
     var reqBlob = msg.splice(4,4+len);
     var reqReader = new FileReader();
@@ -81,7 +81,7 @@ transport.on('onMessage', function(data) {
           var resp = JSON.stringify({'type':'response', 'url':req.url, 'data':cache[req.url]});
           var resplen = new UInt32Array(1);
           resplen[0] = resp.length;
-          transport.send(req.id, new Blob([resplen, resp, cache[req.url]]));
+          transport.send({header: req.id, data: new Blob([resplen, resp, cache[req.url]])});
         } else {
           console.log("Missing resource " + req.url);
         }
@@ -130,7 +130,7 @@ function getReadySock() {
 function flushQueue() {
   var sock = getReadySock();
   for (var i in messageQueue) {
-    transport.send(sock, messageQueue[i]);
+    transport.send({header: sock, data: messageQueue[i]});
   }
   messageQueue = [];
 }
@@ -140,7 +140,7 @@ function instaCDN_fetch() {
 
   for (var i = 0; i < outstanding.length; i++) {
     var req = JSON.stringify({'type':'request', 'url':outstanding[i]});
-    var len = new UInt32Array(1);
+    var len = new Uint32Array(1);
     len[0] = req.length
     messageQueue.push(new Blob([len,req]));
   }
