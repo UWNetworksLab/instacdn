@@ -53,9 +53,16 @@ var freedom = {
         });
         return ret;
       },
-      accept: function(a, b) {
-        var ret = { done: function(c) { ret.cb = c; }};
-        freedom.tran.accept(a, b, function(x) {
+      accept: function(id, str) {
+        var ret = {
+          cb: function(a) {
+            ret.done = function(b, x) {x(b);}.bind(a);
+          },
+          done: function(c) {
+            ret.cb = c;
+          }
+        };
+        freedom.tran.accept(id, str, function(x) {
           ret.cb(x);
         });
         return ret;
