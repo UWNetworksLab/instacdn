@@ -77,7 +77,6 @@ transport.on('onMessage', function(data) {
       if (req.type == 'request') {
         console.log("Received request: "+f.target.result);
         if (typeof cache[req.url] !== "undefined") {
-          console.log("Sending blob of size: "+cache[req.url].size);
           var resp = JSON.stringify({'type':'response', 'url':req.url});
           var resplen = new Uint32Array(1);
           resplen[0] = resp.length;
@@ -92,7 +91,6 @@ transport.on('onMessage', function(data) {
         console.log("Received response: "+f.target.result);
         //cache[req.url] = new Blob([req.data], {type: 'image/jpeg'});
         var image = msg.slice(4+len);
-        console.log("Image blob size: "+image.size);
         cache[req.url] = image;
         freedom.emit('resource', {url: req.url, src: URL.createObjectURL(cache[req.url])});
       }
