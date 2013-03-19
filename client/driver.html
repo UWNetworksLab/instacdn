@@ -1,5 +1,19 @@
 <html>
-<head><title>Test Driver Xtreme</title></head>
+<head><title>Test Driver Xtreme</title>
+  <script type='text/javascript'>
+  window.addEventListener('message', function(m) {
+    console.log(m.data);
+    reset();
+  });
+  
+  var reset = function() {
+    document.body.innerHTML = "";
+    var fr = document.createElement('iframe');
+    fr.src = "index.html";
+    document.body.appendChild(fr);
+  }
+  </script>
+</head>
 <body>
   <iframe src="index.html"></iframe>
 </body>
