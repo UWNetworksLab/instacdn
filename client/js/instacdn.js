@@ -11,9 +11,12 @@ freedom.on('load', l);
 var onLoad = function() {
   // Rewrite all img tags with data-src set.
   var images = document.getElementsByTagName('img');
+  var link = document.createElement('a');
   var urls = [];
   for (var i = 0; i < images.length; i++) {
     var url = images[i].getAttribute("data-src");
+    link.href = url;
+    url = link.origin + link.pathname + link.search;
     if (url != null && typeof imap[url] === 'undefined') {
       imap[url] = [images[i]];
       urls.push(url);
@@ -21,6 +24,7 @@ var onLoad = function() {
       imap[url].push(images[i]);
     }
   }
+  delete link;
   freedom.emit('fetch', urls);
 };
 
