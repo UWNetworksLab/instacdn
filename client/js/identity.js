@@ -43,7 +43,7 @@ IdentityProvider.prototype.get = function(continuation) {
 
 IdentityProvider.prototype.send = function(to, msg, continuation) {
   this.conn.send(JSON.stringify({to:to, msg:msg}));
-  //continuation();
+  continuation();
 };
 
 var identity = freedom.identity();

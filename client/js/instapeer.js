@@ -152,7 +152,6 @@ function instaCDN_fetch() {
   if (!getReadySock()) {
     var promise = transport.create();
     promise.done(function (sockInfo) {
-      console.log(sockInfo);
       sock = sockInfo.id;
       sockId[peers[0]] = sock;
       console.log("Created PeerConnection: "+sock);

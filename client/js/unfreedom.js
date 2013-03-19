@@ -29,9 +29,16 @@ var freedom = {
         });
         return ret;
       },
-      send: function(a) {
-        var ret = { done: function(c) { ret.cb = c; }};
-        freedom.ident.send(a, function(x) {
+      send: function(to, m) {
+        var ret = {
+          cb: function(a) {
+            ret.done = function(b, x) {x(b);}.bind(a);
+          },
+          done: function(c) {
+            ret.cb = c;
+          }
+        };
+        freedom.ident.send(to, m, function(x) {
           ret.cb(x);
         });
         return ret;
@@ -63,6 +70,20 @@ var freedom = {
           }
         };
         freedom.tran.accept(id, str, function(x) {
+          ret.cb(x);
+        });
+        return ret;
+      },
+      send: function(msg) {
+        var ret = {
+          cb: function(a) {
+            ret.done = function(b, x) {x(b);}.bind(a);
+          },
+          done: function(c) {
+            ret.cb = c;
+          }
+        };
+        freedom.tran.send(msg, function(x) {
           ret.cb(x);
         });
         return ret;
