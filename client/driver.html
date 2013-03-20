@@ -13,14 +13,17 @@
   function stats() {
     var l = 0;
     var now = new Date().valueOf();
+    var m = now;
     for (var i = evts.length - 1; i >= 0; i--) {
       if (evts[i].time < now - 10000) {
         evts.splice(i , 1);
       } else {
+        if (evts[i].time < m)
+          m = evts[i].time
         l += evts[i].lat;
       }
     }
-    document.getElementById('qps').innerHTML = evts.length / 10.0;
+    document.getElementById('qps').innerHTML = evts.length * 1000 / (now - m);
     document.getElementById('lat').innerHTML = l / (evts.length * 1.0);
   }
   
