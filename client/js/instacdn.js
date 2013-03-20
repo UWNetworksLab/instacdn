@@ -16,7 +16,7 @@ var onLoad = function() {
   for (var i = 0; i < images.length; i++) {
     var url = images[i].getAttribute("data-src");
     link.href = url;
-    url = link.origin + link.pathname + link.search;
+    url = link.protocol + "//" + link.host + link.pathname + link.search;
     if (url != null && typeof imap[url] === 'undefined') {
       imap[url] = [images[i]];
       urls.push(url);
