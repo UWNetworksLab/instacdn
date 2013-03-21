@@ -94,7 +94,9 @@ transport.on('onMessage', function(data) {
           var responseMsg = {};
           responseMsg['header'] = data['header'];
           responseMsg['data'] = new Blob([resplen, resp, cache[req.url]]);
-          transport.send(responseMsg);
+          transport.send(responseMsg).done(function () {
+            transport.close(data['header']);
+          });
           qpsEvents++;
         } else {
           console.log("Missing resource " + req.url);
@@ -105,6 +107,7 @@ transport.on('onMessage', function(data) {
         var image = msg.slice(4+len);
         cache[req.url] = image;
         freedom.emit('resource', {url: req.url, src: URL.createObjectURL(cache[req.url])});
+        transport.close(data['header']);
       }
     };
     reqReader.readAsText(reqBlob);
