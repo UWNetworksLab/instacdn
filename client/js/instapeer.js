@@ -40,12 +40,15 @@ freedom.on('fetch', function(urls) {
 identity.on('message', function(req) {
   // Req from remote.
   if (sockId[req.from]) {
+    console.log("Accepting answer from "+req.from+" on sock "+sockId[req.from]);
     var promise = transport.accept(sockId[req.from], req.msg);
   } else {
     var promise = transport.accept(null, req.msg);
     promise.done(function (acceptresp) {
-      sockId[req.from] = acceptresp.id;
-      identity.send(req.from, acceptresp.offer);
+      if (acceptresp.offer) {
+        sockId[req.from] = acceptresp.id;
+        identity.send(req.from, acceptresp.offer);
+      }
     });
   }
 });
@@ -169,7 +172,7 @@ function instaCDN_fetch() {
     promise.done(function (sockInfo) {
       sock = sockInfo.id;
       sockId[peers[0]] = sock;
-      console.log("Created PeerConnection: "+sock);
+      console.log("Created PeerConnection: "+sock+", sending offer to "+peers[0]);
       identity.send(peers[0], sockInfo.offer);
     });
   } else {
