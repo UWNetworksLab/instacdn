@@ -8,6 +8,17 @@ var sockId = {};
 var sockState = {};
 var messageQueue = [];
 
+var qpsEvents;
+var qpsStartTime;
+
+(function outputQPS() {
+  var now = new Date().valueOf();
+  freedom.emit('qps', ((qpsEvents*1000)/(now-qpsStartTime)));
+  qpsEvents = 0;
+  qpsStartTime = new Date().valueOf();
+  setTimeout(outputQPS,5000);
+})();
+
 // Client asks for URL.
 freedom.on('fetch', function(urls) {
   outstanding = urls;
@@ -84,6 +95,7 @@ transport.on('onMessage', function(data) {
           responseMsg['header'] = data['header'];
           responseMsg['data'] = new Blob([resplen, resp, cache[req.url]]);
           transport.send(responseMsg);
+          qpsEvents++;
         } else {
           console.log("Missing resource " + req.url);
         }

@@ -8,6 +8,11 @@ function l() {
 window.addEventListener('DOMContentLoaded', l, false);
 freedom.on('load', l);
 
+freedom.on('qps', function(qps) {
+  var qpsdiv = document.getElementById('qps');
+  qpsdiv.innerHTML = "QPS: " + qps;
+});
+
 var onLoad = function() {
   // Rewrite all img tags with data-src set.
   var images = document.getElementsByTagName('img');
