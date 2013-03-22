@@ -55,10 +55,14 @@ class MainHandler(tornado.websocket.WebSocketHandler):
     val = tornado.escape.json_decode(msg)
     val['from'] = self.id
     for s in self.sites:
-      val['site'] = s
-      for u in MainHandler.sites[s]:
-        if u != self.id:
-          MainHandler.waiters[u].write_message(val)
+          val['site'] = s
+          if 'to' in val:
+            if val['to'] in MainHandler.sites[s]:
+              MainHandler.waiters[val['to']].write_message(val)
+          else:
+            for u in MainHandler.sites[s]:
+              if u != self.id:
+                MainHandler.waiters[u].write_message(val)
 
 def main():
   app = Application()
