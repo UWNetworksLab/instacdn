@@ -13,6 +13,11 @@ freedom.on('qps', function(qps) {
   qpsdiv.innerHTML = "QPS: " + qps;
 });
 
+freedom.on('myid', function (myid) {
+  var myiddiv = document.getElementById('myid');
+  myiddiv.innerHTML = "ID: " + myid;
+});
+
 var onLoad = function() {
   // Rewrite all img tags with data-src set.
   var images = document.getElementsByTagName('img');
