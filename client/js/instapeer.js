@@ -25,6 +25,7 @@ freedom.on('fetch', function(urls) {
   //Used waits until we get a buddylist from the server
   var promise = identity.get();
   promise.done(function (id) {
+    freedom.emit("myid", id.id);
     if (peers.indexOf(id.id) > -1) {
       peers.splice(peers.indexOf(id.id), 1);
     }
@@ -40,12 +41,13 @@ freedom.on('fetch', function(urls) {
 identity.on('message', function(req) {
   // Req from remote.
   if (sockId[req.from]) {
-    console.log("Accepting answer from "+req.from+" on sock "+sockId[req.from]);
+    console.log("Accepting something from "+req.from+" on sock "+sockId[req.from]);
     var promise = transport.accept(sockId[req.from], req.msg);
   } else {
     var promise = transport.accept(null, req.msg);
     promise.done(function (acceptresp) {
       if (acceptresp.offer) {
+        console.log("Accepting for the first time from "+req.from+", creating sock "+acceptresp.id);
         sockId[req.from] = acceptresp.id;
         identity.send(req.from, acceptresp.offer);
       }
