@@ -101,6 +101,7 @@ var freedom = {
           ret.cb(x);
         });
         return ret;
+      }
     }
     fdom.tp = x;
     return x;
