@@ -1,31 +1,18 @@
 <html>
 <head><title>Test Driver Xtreme</title>
   <script type='text/javascript'>
-  var evts = [];
-  
+  var pend = [];
   window.addEventListener('message', function(m) {
     console.log(m.data);
-    evts.push({time: new Date().valueOf(), lat: parseInt(m.data)});
-    stats();
-    reset();
-  });
-  
-  function stats() {
-    var l = 0;
-    var now = new Date().valueOf();
-    var m = now;
-    for (var i = evts.length - 1; i >= 0; i--) {
-      if (evts[i].time < now - 10000) {
-        evts.splice(i , 1);
-      } else {
-        if (evts[i].time < m)
-          m = evts[i].time
-        l += evts[i].lat;
-      }
+    if (m.data['final']) {
+      pend.push(m.data['n']);
+      document.getElementById('log').innerText+='\n'+pend.join(',');
+      pend = [];
+      reset();
+    } else {
+      pend.push(m.data['n']);
     }
-    document.getElementById('qps').innerHTML = evts.length * 1000 / (now - m);
-    document.getElementById('lat').innerHTML = l / (evts.length * 1.0);
-  }
+  });
   
   var reset = function() {
     var fo = document.getElementsByTagName('iframe')[0];
@@ -37,7 +24,7 @@
   </script>
 </head>
 <body>
-  Last 10s stats. avg. Latency: <span id='lat'></span> QPS: <span id='qps'></span><br />
+  <pre id='log'></pre>
   <iframe src="index.html"></iframe>
 </body>
 </html>

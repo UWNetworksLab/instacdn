@@ -14,6 +14,7 @@ freedom.on('qps', function(qps) {
 });
 
 freedom.on('myid', function (myid) {
+  top.postMessage({'n':window.performance.now(),'l':'id'},'*');
   var myiddiv = document.getElementById('myid');
   myiddiv.innerHTML = "ID: " + myid;
 });
@@ -35,6 +36,7 @@ var onLoad = function() {
     }
   }
   delete link;
+  top.postMessage({'n':window.performance.now(),'l':'fetch'},'*');
   freedom.emit('fetch', urls);
 };
 
