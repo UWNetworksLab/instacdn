@@ -10,7 +10,9 @@ freedom.on('load', l);
 
 freedom.on('qps', function(qps) {
   var qpsdiv = document.getElementById('qps');
-  qpsdiv.innerHTML = "QPS: " + qps;
+  if (qpsdiv) {
+    qpsdiv.innerHTML = "QPS: " + qps;
+  }
 });
 
 freedom.on('myid', function (myid) {

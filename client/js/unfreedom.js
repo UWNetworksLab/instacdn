@@ -87,7 +87,20 @@ var freedom = {
           ret.cb(x);
         });
         return ret;
-      }
+      },
+      close: function(id) {
+        var ret = {
+          cb: function(a) {
+            ret.done = function(b, x) {x(b);}.bind(a);
+          },
+          done: function(c) {
+            ret.cb = c;
+          }
+        };
+        freedom.tran.close(id, function(x) {
+          ret.cb(x);
+        });
+        return ret;
     }
     fdom.tp = x;
     return x;
