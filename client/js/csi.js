@@ -1,4 +1,5 @@
 var start = window.performance.now();
+top.postMessage({'n':start},'*');
 var end = -1;
 var timer = function(e) {
   if(e.target.tagName == "IMG") {
@@ -12,6 +13,6 @@ var timeID = window.setInterval(function() {
     window.removeEventListener('DOMSubtreeModified', timer);
     document.body.appendChild(document.createTextNode("Load time: " + (end - start)));
     window.clearInterval(timeID);
-    top.postMessage(end-start,'*');
+    top.postMessage({'n':end,'final':true},'*');
   }
 }, 1000);
