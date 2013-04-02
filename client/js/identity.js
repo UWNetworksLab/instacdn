@@ -17,7 +17,7 @@ IdentityProvider.prototype.onMsg = function(m) {
   var data = JSON.parse(m.data);
   if (data.from == 0) {
     // roster update
-    identity.emit('buddylist', data.msg);
+    this.dispatchEvent('buddylist', data.msg);
 
     if (typeof this.id === "function") {
       var c = this.id;
@@ -27,7 +27,7 @@ IdentityProvider.prototype.onMsg = function(m) {
       this.id = data.id;
     }
   } else {
-    identity.emit('message', data);
+    this.dispatchEvent('message', data);
     //console.log("Received msg: "+data.msg);
   }
 }
