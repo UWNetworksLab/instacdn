@@ -1,16 +1,11 @@
 function IdentityProvider() {
   this.conn = new WebSocket("ws://p2pbr.com:8082/route");
   this.connected = false;
-  this.conn.addEventListener('open', function() {
-    this.connected = true;
-  }.bind(this), true);
+  this.onConnected = function() {};
+  this.conn.addEventListener('open', this.onStateChange.bind(this, true), true);
   this.conn.addEventListener('message', this.onMsg.bind(this), true);
-  this.conn.addEventListener('error', function() {
-    this.connected = false;
-  }.bind(this), true);
-  this.conn.addEventListener('close', function() {
-    this.connected = false;
-  }.bind(this), true);
+  this.conn.addEventListener('error', this.onStateChange.bind(this, false), true);
+  this.conn.addEventListener('close', this.onStateChange.bind(this, false), true);
 };
 
 IdentityProvider.prototype.onMsg = function(m) {
@@ -18,26 +13,26 @@ IdentityProvider.prototype.onMsg = function(m) {
   if (data.from == 0) {
     // roster update
     this.dispatchEvent('buddylist', data.msg);
-
-    if (typeof this.id === "function") {
-      var c = this.id;
-      this.id = data.id;
-      c();
-    } else {
-      this.id = data.id;
-    }
+  
+    // identity update
+    this.id = data.id;
+    this.onConnected();
   } else {
     this.dispatchEvent('message', data);
-    //console.log("Received msg: "+data.msg);
   }
-}
+};
+
+IdentityProvider.prototype.onStateChange = function(to) {
+  this.connected = to;
+};
 
 IdentityProvider.prototype.get = function(continuation) {
-  var c = function() {continuation({"id": this.id});}.bind(this);
   if (this.id) {
-    c();
+    continuation({'id': this.id});
   } else {
-    this.id = c;
+    this.onConnected = function() {
+      continuation({'id': this.id});
+    }.bind(this);
   }
 };
 
