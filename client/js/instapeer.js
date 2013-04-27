@@ -1,16 +1,18 @@
 var identity = freedom.identity();
-var transport = freedom['core.transport']();
+var transport = freedom.transport;
 
 var cache = {};
 var outstanding;
-var peers = [];
-var sockId = {};
-var sockState = {};
-var messageQueue = [];
 
+var identityChannels = {};
+var peerChannels = {};
+
+var peers = [];
+var state = {};
+
+/*
 var qpsEvents;
 var qpsStartTime;
-
 (function outputQPS() {
   var now = new Date().valueOf();
   freedom.emit('qps', ((qpsEvents*1000)/(now-qpsStartTime)));
@@ -18,13 +20,14 @@ var qpsStartTime;
   qpsStartTime = new Date().valueOf();
   setTimeout(outputQPS,5000);
 })();
+*/
 
 // Client asks for URL.
 freedom.on('fetch', function(urls) {
   outstanding = urls;
-  //Used waits until we get a buddylist from the server
   var promise = identity.get();
   promise.done(function (id) {
+    // TODO: remove debugging info.
     freedom.emit("myid", id.id);
     if (peers.indexOf(id.id) > -1) {
       peers.splice(peers.indexOf(id.id), 1);
@@ -37,88 +40,76 @@ freedom.on('fetch', function(urls) {
   });
 });
 
-// Remote asks for URL.
+// Remote initiates connection.
+// TODO(willscott): what is the structure of req?
 identity.on('message', function(req) {
-  // Req from remote.
-  if (sockId[req.from]) {
-    console.log("Accepting something from "+req.from+" on sock "+sockId[req.from]);
-    var promise = transport.accept(sockId[req.from], req.msg);
+  if (!identityChannels[req.from]) {
+    // Make a channel.
+    initTransport(req.from, function(r) {
+      var x = identityChannels[r.from];
+      identityChannels[r.from].emit('message', r.message);
+    }.bind(this, req));
   } else {
-    var promise = transport.accept(null, req.msg);
-    promise.done(function (acceptresp) {
-      if (acceptresp.offer) {
-        console.log("Accepting for the first time from "+req.from+", creating sock "+acceptresp.id);
-        sockId[req.from] = acceptresp.id;
-        identity.send(req.from, acceptresp.offer);
+    identityChannels[req.from].emit('message', req.message);
+  }
+});
+
+function initTransport(to, continuation) {
+  state[to] = [];
+  var promise = freedom.core.createChannel();
+  promise.done(function(to, channel) {
+    // Hook up one end to the identity service.
+    channel.on('message', function(msg) {
+      if (!msg.from) {
+        identity.send(to, msg);
       }
     });
-  }
-});
+    channel.on('ready', continuation);
 
-identity.on('buddylist', function(b) {
-  peers = b;
-});
+    console.log('Routing identity channel for ' + to);
+    identityChannels[to] = channel;
+    
+    // Give the other to peer transport.
+    var peer = transport();
+    peer.on('message', onMessage.bind(this, to));
+    peer.on('onClose', onClose.bind(this, to));
+    peer.open(channel);
+    peerChannels[to] = peer;
+  }.bind(this, to));
+}
 
-transport.on('onStateChange', function(data) {
-  console.log(data.id+" state change to: "+data.state);
-  sockState[data.id] = data.state;
-  if (data.state == "open") {
-    flushQueue();
-  }
-});
-
-transport.on('onSignal', function(data) {
-  function findPeer(id) {
-    for (var prop in sockId) {
-      if (sockId[prop] == id) {
-        return prop;
-      }
+// Message from Peer.
+var onMessage = function(from, message) {
+  if (state[from] && state[from].length && message.ref) {
+    console.log("Received Response");
+    var url = state[from].shift();
+    cache[url] = message;
+    freedom.emit('resource', {url: url, src: freedom.core.unreference(cache[url], 'objectURL')});
+  } else if (state[from] && state[from].length) {
+    state[from].shift();
+    console.log("TODO: handle 404 Response from peer.");
+  } else { // Request.
+    if (typeof cache[message] != "undefined") {
+      peerChannels[from].send(cache[message]);
+    } else {
+      peerChannels[from].send(404).done(function() {
+        peerChannels[from].close();
+        onClose(from);
+      });
     }
   }
-  var peer = findPeer(data.id);
-  identity.send(peer, data.message);
-});
+};
 
-transport.on('onMessage', function(data) {
-  var msg = data.data;
-  var lenBlob = msg.slice(0,4);
-  var lenReader = new FileReader();
-  lenReader.onload = function(e) {
-    var lenArray = new Uint32Array(e.target.result);
-    var len = lenArray[0];
-    var reqBlob = msg.slice(4,4+len);
-    var reqReader = new FileReader();
-    reqReader.onload = function(f) {
-      var req = JSON.parse(f.target.result);
-      if (req.type == 'request') {
-        console.log("Received request: "+f.target.result);
-        if (typeof cache[req.url] !== "undefined") {
-          var resp = JSON.stringify({'type':'response', 'url':req.url});
-          var resplen = new Uint32Array(1);
-          resplen[0] = resp.length;
-          var responseMsg = {};
-          responseMsg['header'] = data['header'];
-          responseMsg['data'] = new Blob([resplen, resp, cache[req.url]]);
-          transport.send(responseMsg).done(function () {
-            transport.close(data['header']);
-          });
-          qpsEvents++;
-        } else {
-          console.log("Missing resource " + req.url);
-        }
-      } else if (req.type =='response') {
-        console.log("Received response: "+f.target.result);
-        //cache[req.url] = new Blob([req.data], {type: 'image/jpeg'});
-        var image = msg.slice(4+len);
-        cache[req.url] = image;
-        freedom.emit('resource', {url: req.url, src: URL.createObjectURL(cache[req.url])});
-        transport.close(data['header']);
-      }
-    };
-    reqReader.readAsText(reqBlob);
-  };
-  lenReader.readAsArrayBuffer(lenBlob);
-  
+// Transport Closes.
+var onClose = function(from) {
+  delete peerChannels[from];
+  delete peerChannels[from];
+  delete state[from];
+}
+
+// Peer list update.
+identity.on('buddylist', function(buddies) {
+  peers = buddies;
 });
 
 /// InstaCDN methods.
@@ -132,6 +123,7 @@ function http_fetch() {
     
     req.onload = function(e) {
       if (this.status == 200) {
+        // TODO: retrieve mime type using req.getResponseHeader
         var blob = new Blob([this.response], {type: 'image/jpeg'});
         cache[url] = blob;
         freedom.emit('resource', {url: url, src: URL.createObjectURL(blob)});
@@ -142,44 +134,15 @@ function http_fetch() {
   }
 };
 
-function getReadySock() {
-  for (var key in sockState) {
-    if (sockState[key] == "open") {
-      return parseInt(key);
-    }
-  }
-  return null;
-}
-
-function flushQueue() {
-  var sock = getReadySock();
-  for (var i in messageQueue) {
-    transport.send({header: sock, data: messageQueue[i]});
-  }
-  messageQueue = [];
-}
-
 function instaCDN_fetch() {
-  console.log('fetch from peers');
-
-  for (var i = 0; i < outstanding.length; i++) {
-    var req = JSON.stringify({'type':'request', 'url':outstanding[i]});
-    var len = new Uint32Array(1);
-    len[0] = req.length
-    messageQueue.push(new Blob([len,req]));
-  }
-
-  if (!getReadySock()) {
-    var promise = transport.create();
-    promise.done(function (sockInfo) {
-      sock = sockInfo.id;
-      sockId[peers[0]] = sock;
-      console.log("Created PeerConnection: "+sock+", sending offer to "+peers[0]);
-      identity.send(peers[0], sockInfo.offer);
-    });
-  } else {
-    flushQueue();
-  }
+  // TODO: distribute requests across available peers.
+  console.log("Initiating Connection with " + peers[0]);
+  initTransport(peers[0], function() {
+    for (var i = 0; i < outstanding.length; i++) {
+      state[peers[0]].push(outstanding[i]);
+      peerChannels[peers[0]].send(outstanding[i]);
+    }    
+  });
 }
 
 freedom.emit('load');

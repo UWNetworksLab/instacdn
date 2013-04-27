@@ -5,10 +5,11 @@
     "script": "js/instapeer.js"
   },
   "dependencies": {
-    "identity": "js/identity.json"
+    "identity": "js/identity.json",
+    "transport": "js/transport.json"
   },
   "permissions": [
     "identity",
-    "core.transport"
+    "transport"
   ]
 }
