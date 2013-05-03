@@ -18,7 +18,6 @@ IdentityProvider.prototype.onMsg = function(m) {
     this.id = data.id;
     this.onConnected();
   } else {
-    console.log("incoming msg " + JSON.stringify(data));
     var msg = {
       "from": data['from'],
       "message": data['msg']
@@ -42,7 +41,6 @@ IdentityProvider.prototype.get = function(continuation) {
 };
 
 IdentityProvider.prototype.send = function(to, msg, continuation) {
-  console.log("asked to send: " + JSON.stringify(msg));
   this.conn.send(JSON.stringify({to:to, msg:msg}));
   continuation();
 };

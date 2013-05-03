@@ -59,14 +59,13 @@ function initTransport(to, continuation) {
   var promise = freedom.core.createChannel();
   promise.done(function(to, channel) {
     // Hook up one end to the identity service.
+    channel.reflectEvents = false;
     channel.on('message', function(msg) {
       if (!msg.from) {
         identity.send(to, msg);
       }
     });
     channel.on('ready', continuation);
-
-    console.log('Routing identity channel for ' + to);
     identityChannels[to] = channel;
     
     // Give the other to peer transport.
