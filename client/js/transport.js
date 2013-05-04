@@ -6,7 +6,11 @@ function TransportProvider() {
 };
 
 TransportProvider.prototype.onMessage = function(m) {
-  this.dispatchEvent('message', m);
+  if (m.text) {
+    this.dispatchEvent('message', m.text)
+  } else {
+    this.dispatchEvent('message', m.binary);
+  }
 };
 
 TransportProvider.prototype.open = function(proxy, continuation) {
@@ -17,6 +21,7 @@ TransportProvider.prototype.open = function(proxy, continuation) {
 TransportProvider.prototype.send = function(msg, continuation) {
   var promise;
   if (msg instanceof Blob) {
+    console.log("Transport asking to post binary msg");
     promise = this.peer.postMessage({"binary": msg})
   } else {
     console.log("Transport asking to post text msg: " + msg);
@@ -26,7 +31,7 @@ TransportProvider.prototype.send = function(msg, continuation) {
 };
 
 TransportProvider.prototype.close = function(continuation) {
-  peer.close().done(continuation);
+  this.peer.close().done(continuation);
 };
 
 TransportProvider.prototype.onClose = function() {

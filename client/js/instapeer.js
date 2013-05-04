@@ -79,22 +79,19 @@ function initTransport(to, continuation) {
 
 // Message from Peer.
 var onMessage = function(from, message) {
-  if (state[from] && state[from].length && message.ref) {
-    console.log("Received Response");
+  if (state[from] && state[from].length && message instanceof Blob) {
     var url = state[from].shift();
     cache[url] = message;
-    freedom.emit('resource', {url: url, src: freedom.core.unreference(cache[url], 'objectURL')});
-  } else if (state[from] && state[from].length) {
+    freedom.emit('resource', {url: url, src: URL.createObjectURL(cache[url])});
+  } else if (state[from] && state[from].length && message == 404) {
     state[from].shift();
     console.log("TODO: handle 404 Response from peer.");
   } else { // Request.
+    console.log("got req " + JSON.stringify(message));
     if (typeof cache[message] != "undefined") {
       peerChannels[from].send(cache[message]);
     } else {
-      peerChannels[from].send(404).done(function() {
-        peerChannels[from].close();
-        onClose(from);
-      });
+      peerChannels[from].send(404);
     }
   }
 };
