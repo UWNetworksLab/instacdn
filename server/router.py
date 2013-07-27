@@ -43,6 +43,9 @@ class MainHandler(tornado.websocket.WebSocketHandler):
       'msg':MainHandler.sites[ref]
     });
 
+  def on_finish(self):
+    self.on_close()
+
   def on_close(self):
     if self.id:
       for key in self.sites:
