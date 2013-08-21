@@ -11,7 +11,9 @@ freedom.on('load', l);
 freedom.on('qps', function(qps) {
   var qpsdiv = document.getElementById('qps');
   if (qpsdiv) {
-    qpsdiv.innerHTML = "QPS: " + qps;
+    qpsdiv.appendChild(document.createTextNode("QPS: " + qps));
+    qpsdiv.appendChild(document.createElement('br'));
+    //qpsdiv.innerHTML = "QPS: " + qps;
   }
 });
 
