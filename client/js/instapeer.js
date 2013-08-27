@@ -25,10 +25,11 @@ var qpsStartTime;
 // Client asks for URL.
 freedom.on('fetch', function(urls) {
   outstanding = urls;
-  var promise = identity.get();
+  var promise = identity.login('instaCDN', 1.0, 'localhost');
   promise.done(function (id) {
     // TODO: remove debugging info.
     freedom.emit("myid", id.id);
+    console.log(peers);
     if (peers.indexOf(id.id) > -1) {
       peers.splice(peers.indexOf(id.id), 1);
     }
@@ -56,7 +57,7 @@ identity.on('message', function(req) {
 
 function initTransport(to, continuation) {
   state[to] = [];
-  var promise = freedom.core.createChannel();
+  var promise = freedom.core().createChannel();
   promise.done(function(to, channel) {
     // Hook up one end to the identity service.
     channel.reflectEvents = false;
@@ -104,8 +105,8 @@ var onClose = function(from) {
 }
 
 // Peer list update.
-identity.on('buddylist', function(buddies) {
-  peers = buddies;
+identity.on('onChange', function(buddies) {
+  peers = buddies.clients;
 });
 
 /// InstaCDN methods.

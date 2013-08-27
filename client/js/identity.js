@@ -12,7 +12,7 @@ IdentityProvider.prototype.onMsg = function(m) {
   var data = JSON.parse(m.data);
   if (data.from == 0) {
     // roster update
-    this.dispatchEvent('buddylist', data.msg);
+    this.dispatchEvent('onChange', {'clients': data.msg});
   
     // identity update
     this.id = data.id;
@@ -30,7 +30,7 @@ IdentityProvider.prototype.onStateChange = function(to) {
   this.connected = to;
 };
 
-IdentityProvider.prototype.get = function(continuation) {
+IdentityProvider.prototype.login = function(agent, version, url, continuation) {
   if (this.id) {
     continuation({'id': this.id});
   } else {
