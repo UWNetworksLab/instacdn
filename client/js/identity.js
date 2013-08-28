@@ -19,10 +19,10 @@ IdentityProvider.prototype.onMsg = function(m) {
     this.onConnected();
   } else {
     var msg = {
-      "from": data['from'],
+      "fromUserId": data['from'],
       "message": data['msg']
     };
-    this.dispatchEvent('message', msg);
+    this.dispatchEvent('onMessage', msg);
   }
 };
 
@@ -40,7 +40,7 @@ IdentityProvider.prototype.login = function(agent, version, url, continuation) {
   }
 };
 
-IdentityProvider.prototype.send = function(to, msg, continuation) {
+IdentityProvider.prototype.sendMessage = function(to, msg, continuation) {
   this.conn.send(JSON.stringify({to:to, msg:msg}));
   continuation();
 };

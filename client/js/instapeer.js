@@ -43,37 +43,38 @@ freedom.on('fetch', function(urls) {
 
 // Remote initiates connection.
 // TODO(willscott): what is the structure of req?
-identity.on('message', function(req) {
-  if (!identityChannels[req.from]) {
+identity.on('onMessage', function(req) {
+  if (!identityChannels[req.fromUserId]) {
     // Make a channel.
-    initTransport(req.from, function(r) {
-      var x = identityChannels[r.from];
-      identityChannels[r.from].emit('message', r.message);
+    initTransport(req.fromUserId, function(r) {
+      var x = identityChannels[r.fromUserId];
+      identityChannels[r.fromUserId].emit('message', r.message);
     }.bind(this, req));
   } else {
-    identityChannels[req.from].emit('message', req.message);
+    identityChannels[req.fromUserId].emit('message', req.message);
   }
 });
 
 function initTransport(to, continuation) {
   state[to] = [];
   var promise = freedom.core().createChannel();
-  promise.done(function(to, channel) {
+  promise.done(function(to, chan) {
     // Hook up one end to the identity service.
-    channel.reflectEvents = false;
-    channel.on('message', function(msg) {
-      if (!msg.from) {
-        identity.send(to, msg);
-      }
-    });
-    channel.on('ready', continuation);
-    identityChannels[to] = channel;
+    chan.channel.done(function(to, cb, channel) {
+      channel.on('message', function(msg) {
+        if (!msg.from) {
+          identity.sendMessage(to, msg);
+        }
+        identityChannels[to] = channel;
+        cb();
+      });
+    }.bind(this, to, continuation));
     
     // Give the other to peer transport.
     var peer = transport();
     peer.on('message', onMessage.bind(this, to));
     peer.on('onClose', onClose.bind(this, to));
-    peer.open(channel);
+    peer.open(chan.identifier);
     peerChannels[to] = peer;
   }.bind(this, to));
 }
