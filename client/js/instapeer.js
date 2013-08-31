@@ -5,6 +5,7 @@ var cache = {};
 var outstanding;
 
 var identityChannels = {};
+var identityQueue = {};
 var peerChannels = {};
 
 var peers = [];
@@ -46,10 +47,17 @@ freedom.on('fetch', function(urls) {
 identity.on('onMessage', function(req) {
   if (!identityChannels[req.fromUserId]) {
     // Make a channel.
-    initTransport(req.fromUserId, function(r) {
-      var x = identityChannels[r.fromUserId];
-      identityChannels[r.fromUserId].emit('message', r.message);
-    }.bind(this, req));
+    if (identityQueue[req.fromUserId]) {
+      identityQueue[req.fromUserId].push(req);  
+    } else {
+      identityQueue[req.fromUserId] = [req];
+      initTransport(req.fromUserId, function(r) {
+        for (var i = 0; i < identityQueue[r.fromUserId].length; i++) {
+          identityChannels[r.fromUserId].emit('message', identityQueue[r.fromUserId][i].message);
+        }
+        identityQueue[r.fromUserId] = [];
+      }.bind(this, req));
+    }
   } else {
     identityChannels[req.fromUserId].emit('message', req.message);
   }
@@ -65,9 +73,9 @@ function initTransport(to, continuation) {
         if (!msg.from) {
           identity.sendMessage(to, msg);
         }
-        identityChannels[to] = channel;
-        cb();
       });
+      identityChannels[to] = channel;
+      cb();
     }.bind(this, to, continuation));
     
     // Give the other to peer transport.
@@ -80,10 +88,16 @@ function initTransport(to, continuation) {
 }
 
 // Message from Peer.
-var onMessage = function(from, message) {
+var onMessage = function(from, data) {
+  var message = data.data;
+  //@TODO(ryscheng) - fix Transport/core.peerconnection not returning a Blob
   if (state[from] && state[from].length && message instanceof Blob) {
     var url = state[from].shift();
     cache[url] = message;
+    freedom.emit('resource', {url: url, src: URL.createObjectURL(cache[url])});
+  } else if (state[from] && state[from].length && message instanceof ArrayBuffer) {
+    var url = state[from].shift();
+    cache[url] = new Blob([message], {"type": "text/plain"});
     freedom.emit('resource', {url: url, src: URL.createObjectURL(cache[url])});
   } else if (state[from] && state[from].length && message == 404) {
     state[from].shift();
@@ -91,9 +105,9 @@ var onMessage = function(from, message) {
   } else { // Request.
     console.log("got req " + JSON.stringify(message));
     if (typeof cache[message] != "undefined") {
-      peerChannels[from].send(cache[message]);
+      peerChannels[from].send("instacdn", cache[message]);
     } else {
-      peerChannels[from].send(404);
+      peerChannels[from].send("instacdn", 404);
     }
   }
 };
@@ -138,8 +152,8 @@ function instaCDN_fetch() {
   initTransport(peers[0], function() {
     for (var i = 0; i < outstanding.length; i++) {
       state[peers[0]].push(outstanding[i]);
-      peerChannels[peers[0]].send(outstanding[i]);
-    }    
+      peerChannels[peers[0]].send("instacdn", outstanding[i]);
+    }
   });
 }
 

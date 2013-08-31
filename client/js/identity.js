@@ -1,5 +1,6 @@
 function IdentityProvider() {
-  this.conn = new WebSocket("ws://p2pbr.com:8082/route/instacdndemo");
+  //this.conn = new WebSocket("ws://p2pbr.com:8082/route/instacdndemo");
+  this.conn = new WebSocket("ws://localhost:8082/route/instacdndemo");
   this.connected = false;
   this.onConnected = function() {};
   this.conn.addEventListener('open', this.onStateChange.bind(this, true), true);
